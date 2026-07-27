@@ -30,6 +30,13 @@ export default function CoffeeCard({ shop }: Props) {
     const score = (n: number | null | undefined) =>
         typeof n === 'number' ? `${n}/5` : '—';
 
+    // Build a Google Maps search URL from name + address; fall back to the name
+    // alone when no address is available.
+    const mapsQuery = shop.address ? `${shop.name} ${shop.address}` : shop.name;
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        mapsQuery
+    )}`;
+
     return (
         <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-4 transition-colors hover:border-amber-200 hover:bg-amber-50/40">
             <div className="flex items-center gap-2">
@@ -63,6 +70,16 @@ export default function CoffeeCard({ shop }: Props) {
                     {shop.notes}
                 </p>
             )}
+
+            <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700 sm:w-auto"
+            >
+                <MapPin size={15} />
+                Open in Google Maps
+            </a>
         </div>
     );
 }
