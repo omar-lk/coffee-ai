@@ -1,50 +1,85 @@
 'use client';
 
-import { Coffee, MapPin, Wifi, Plug } from 'lucide-react';
+import { Coffee, MapPin, Wifi, Plug, Volume2 } from 'lucide-react';
 import { CoffeeShop } from '@/types/chat';
 
 interface Props {
     shop: CoffeeShop;
 }
 
-export default function CoffeeCard({ shop }: Props) {
+function Stat({
+    icon,
+    label,
+    value,
+}: {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+}) {
     return (
-        <div className="rounded-xl border border-zinc-200 p-4 bg-zinc-50">
+        <div className="flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-stone-600 ring-1 ring-stone-200">
+            <span className="text-amber-600">{icon}</span>
+            <span className="text-stone-400">{label}</span>
+            <span className="text-stone-800">{value}</span>
+        </div>
+    );
+}
 
+// A single retrieved coffee shop, rendered as a source card under an answer.
+export default function CoffeeCard({ shop }: Props) {
+    const score = (n: number | null | undefined) =>
+        typeof n === 'number' ? `${n}/5` : '—';
+
+    // Build a Google Maps search URL from name + address; fall back to the name
+    // alone when no address is available.
+    const mapsQuery = shop.address ? `${shop.name} ${shop.address}` : shop.name;
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        mapsQuery
+    )}`;
+
+    return (
+        <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-4 transition-colors hover:border-amber-200 hover:bg-amber-50/40">
             <div className="flex items-center gap-2">
-                <Coffee size={18} />
-                <h3 className="font-semibold">{shop.name}</h3>
+                <Coffee size={16} className="text-amber-700" />
+                <h3 className="font-semibold text-stone-900">{shop.name}</h3>
             </div>
 
-            <div className="flex items-center gap-2 mt-2 text-sm text-zinc-600">
-                <MapPin size={15} />
-                {shop.neighborhood}
-            </div>
-
-            <div className="flex flex-wrap gap-5 mt-4 text-sm">
-
-                <div className="flex items-center gap-1">
-                    <Wifi size={15} />
-                    {shop.wifi_score}/5
+            {shop.neighborhood && (
+                <div className="mt-1.5 flex items-center gap-1.5 text-sm text-stone-500">
+                    <MapPin size={14} />
+                    {shop.neighborhood}
                 </div>
+            )}
 
-                <div>
-                    🔇 {shop.noise_score}/5
-                </div>
-
-                <div className="flex items-center gap-1">
-                    <Plug size={15} />
-                    {shop.outlet_score ?? '-'}
-                </div>
-
+            <div className="mt-3 flex flex-wrap gap-2">
+                <Stat icon={<Wifi size={13} />} label="WiFi" value={score(shop.wifi_score)} />
+                <Stat
+                    icon={<Volume2 size={13} />}
+                    label="Noise"
+                    value={score(shop.noise_score)}
+                />
+                <Stat
+                    icon={<Plug size={13} />}
+                    label="Outlets"
+                    value={score(shop.outlet_score)}
+                />
             </div>
 
             {shop.notes && (
-                <p className="text-sm text-zinc-600 mt-3">
+                <p className="mt-3 text-sm leading-relaxed text-stone-600">
                     {shop.notes}
                 </p>
             )}
 
+            <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700 sm:w-auto"
+            >
+                <MapPin size={15} />
+                Open in Google Maps
+            </a>
         </div>
     );
 }

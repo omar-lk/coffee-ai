@@ -1,52 +1,60 @@
 'use client';
 
-import ReactMarkdown from 'react-markdown';
-import { Bot, User } from 'lucide-react';
 import { Message as MessageType } from '@/types/chat';
+import Avatar from './Avatar';
+import Markdown from './Markdown';
 import CoffeeCard from './CoffeeCard';
 
 interface Props {
     message: MessageType;
 }
 
+// One chat row: avatar + bubble. Assistant answers also render their source
+// coffee cards (from the existing `sources` array) beneath the text.
 export default function Message({ message }: Props) {
     const isUser = message.role === 'user';
+    const sources = message.sources ?? [];
 
     return (
         <div
-            className={`flex gap-4 mb-8 ${isUser ? 'justify-end' : 'justify-start'
-                }`}
+            className={`flex items-start gap-3 ${
+                isUser ? 'flex-row-reverse' : 'flex-row'
+            }`}
         >
-            {!isUser && (
-                <div className="w-10 h-10 rounded-full bg-zinc-900 text-white flex items-center justify-center shrink-0">
-                    <Bot size={18} />
-                </div>
-            )}
+            <Avatar role={message.role} />
 
             <div
-                className={`max-w-2xl rounded-2xl px-5 py-4 shadow-sm ${isUser
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white border border-zinc-200'
-                    }`}
+                className={`flex min-w-0 flex-col ${
+                    isUser ? 'items-end' : 'items-start'
+                } max-w-[85%] sm:max-w-[75%]`}
             >
-                <div className="prose prose-sm max-w-none">
-                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                <div
+                    className={`rounded-2xl px-4 py-3 shadow-sm ${
+                        isUser
+                            ? 'rounded-tr-md bg-amber-600 text-white'
+                            : 'rounded-tl-md border border-stone-200 bg-white text-stone-800'
+                    }`}
+                >
+                    {isUser ? (
+                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+                            {message.content}
+                        </p>
+                    ) : (
+                        <Markdown content={message.content} />
+                    )}
                 </div>
 
-                {message.sources && message.sources.length > 0 && (
-                    <div className="mt-5 space-y-3">
-                        {message.sources.map((shop) => (
+                {!isUser && sources.length > 0 && (
+                    <div className="mt-3 w-full space-y-2.5">
+                        <p className="px-1 text-xs font-medium tracking-wide text-stone-400 uppercase">
+                            Sources
+                        </p>
+                        {sources.map((shop) => (
                             <CoffeeCard key={shop.id} shop={shop} />
                         ))}
                     </div>
                 )}
             </div>
-
-            {isUser && (
-                <div className="w-10 h-10 rounded-full bg-zinc-300 flex items-center justify-center shrink-0">
-                    <User size={18} />
-                </div>
-            )}
         </div>
     );
 }

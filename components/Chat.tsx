@@ -1,19 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import ChatInput from './ChatInput';
-import MessageList from './MessageList';
 import { Message } from '@/types/chat';
+import ChatHeader from './ChatHeader';
+import MessageList from './MessageList';
+import ChatInput from './ChatInput';
+import EmptyState from './EmptyState';
 
 export default function Chat() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [question, setQuestion] = useState('');
     const [loading, setLoading] = useState(false);
 
-    async function send() {
-        if (!question.trim() || loading) return;
-
-        const userQuestion = question;
+    async function sendQuestion(text: string) {
+        const userQuestion = text.trim();
+        if (!userQuestion || loading) return;
 
         setMessages((prev) => [
             ...prev,
@@ -28,15 +29,16 @@ export default function Chat() {
         setLoading(true);
 
         try {
+            // API contract unchanged: POST { question } → { answer, sources }.
             const res = await fetch('/api/chat', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    question: userQuestion,
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: userQuestion }),
             });
+
+            if (!res.ok) {
+                throw new Error(`Request failed (${res.status})`);
+            }
 
             const data = await res.json();
 
@@ -45,8 +47,18 @@ export default function Chat() {
                 {
                     id: crypto.randomUUID(),
                     role: 'assistant',
-                    content: data.answer,
+                    content: data.answer ?? "I don't know.",
                     sources: data.sources,
+                },
+            ]);
+        } catch {
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content:
+                        'Sorry — something went wrong reaching the assistant. Please try again.',
                 },
             ]);
         } finally {
@@ -54,49 +66,26 @@ export default function Chat() {
         }
     }
 
+    const isEmpty = messages.length === 0 && !loading;
+
     return (
-        <div className="flex flex-col h-screen">
+        <div className="flex h-dvh flex-col">
+            <ChatHeader />
 
-            <div className="border-b bg-white">
-                <div className="max-w-4xl mx-auto py-6">
-                    <h1 className="text-3xl font-bold">Finder</h1>
-                    <p className="text-zinc-500">
-                        AI assistant for finding coffee shops in Marrakech.
-                    </p>
-                </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-                <div className="max-w-4xl mx-auto py-8">
-
-                    {messages.length === 0 ? (
-                        <div className="text-center mt-32 text-zinc-500">
-                            <h2 className="text-2xl font-semibold">
-                                Ask me anything about coffee shops.
-                            </h2>
-
-                            <p className="mt-3">
-                                Example:
-                            </p>
-
-                            <p className="mt-2">
-                                "Quiet place with good WiFi in Gueliz"
-                            </p>
-                        </div>
-                    ) : (
-                        <MessageList messages={messages} />
-                    )}
-
-                </div>
-            </div>
+            <main className="scrollbar-thin flex-1 overflow-y-auto">
+                {isEmpty ? (
+                    <EmptyState onExample={sendQuestion} />
+                ) : (
+                    <MessageList messages={messages} loading={loading} />
+                )}
+            </main>
 
             <ChatInput
                 value={question}
                 loading={loading}
                 onChange={setQuestion}
-                onSend={send}
+                onSend={() => sendQuestion(question)}
             />
-
         </div>
     );
 }
